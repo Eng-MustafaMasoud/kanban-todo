@@ -19,8 +19,7 @@ export interface Task {
 }
 
 // Base URL for API requests - using environment variable with fallback
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 // Common headers for all requests
 const getHeaders = () => ({

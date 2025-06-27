@@ -1,33 +1,98 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
-// server runn on 4000 port
-// client runn on 3000 port
+// Define types for the database
+interface Task {
+  id: string | number;
+  title: string;
+  description: string;
+  column: "backlog" | "in_progress" | "review" | "done";
+  status: "backlog" | "in_progress" | "review" | "done";
+  subtasks?: Array<{
+    id: number;
+    title: string;
+    status: "todo" | "doing" | "done";
+  }>;
+}
 
-const API_URL = "http://127.0.0.1:4000";
+interface Database {
+  tasks: Task[];
+  columns?: Array<{
+    id: string;
+    title: string;
+  }>;
+}
+
+// Path to the JSON database file
+const DB_PATH = path.join(process.cwd(), "db.json");
+
+// Helper function to read the database
+const readDB = (): Database => {
+  try {
+    const data = fs.readFileSync(DB_PATH, "utf8");
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("Error reading database:", error);
+    // Return default structure if database file doesn't exist
+    return { tasks: [] };
+  }
+};
+
+// Helper function to write to the database
+const writeDB = (data: Database): boolean => {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+    return true;
+  } catch (error) {
+    console.error("Error writing to database:", error);
+    return false;
+  }
+};
 
 export async function GET(request: Request) {
   try {
-    // Forward query params to json server
-    const url = new URL(`${API_URL}/tasks`);
-    const reqUrl = new URL(request.url);
-    reqUrl.searchParams.forEach((value, key) => {
-      url.searchParams.append(key, value);
-    });
+    const db = readDB();
+    const tasks = db.tasks || [];
 
-    const response = await fetch(url.toString(), {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    // Handle query parameters for filtering and pagination
+    const url = new URL(request.url);
+    const column = url.searchParams.get("column");
+    const search = url.searchParams.get("q") || url.searchParams.get("search");
+    const page = parseInt(url.searchParams.get("_page") || "1");
+    const limit = parseInt(url.searchParams.get("_limit") || "10");
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    let filteredTasks = tasks;
+
+    if (column) {
+      filteredTasks = filteredTasks.filter(
+        (task: Task) => task.column === column
+      );
     }
 
-    const data = await response.json();
-    // Forward X-Total-Count header for pagination
-    const total = response.headers.get("x-total-count");
-    return NextResponse.json({ data, total });
+    if (search) {
+      filteredTasks = filteredTasks.filter(
+        (task: Task) =>
+          task.title.toLowerCase().includes(search.toLowerCase()) ||
+          task.description.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+
+    // Handle pagination
+    const total = filteredTasks.length;
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedTasks = filteredTasks.slice(startIndex, endIndex);
+
+    // If pagination parameters are present, return paginated response
+    if (url.searchParams.has("_page") || url.searchParams.has("_limit")) {
+      const response = NextResponse.json(paginatedTasks);
+      response.headers.set("x-total-count", total.toString());
+      return response;
+    }
+
+    // Otherwise return all filtered tasks
+    return NextResponse.json(filteredTasks);
   } catch (error) {
     console.error("Error fetching tasks:", error);
     return NextResponse.json(
@@ -40,21 +105,24 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const db = readDB();
 
-    const response = await fetch(`${API_URL}/tasks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    // Generate a new ID
+    const newId = Date.now().toString();
+    const newTask: Task = {
+      ...body,
+      id: newId,
+    };
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Add to database
+    db.tasks = db.tasks || [];
+    db.tasks.push(newTask);
+
+    if (writeDB(db)) {
+      return NextResponse.json(newTask, { status: 201 });
+    } else {
+      throw new Error("Failed to write to database");
     }
-
-    const data = await response.json();
-    return NextResponse.json(data, { status: 201 });
   } catch (error) {
     console.error("Error creating task:", error);
     return NextResponse.json(

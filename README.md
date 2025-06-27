@@ -83,6 +83,43 @@ A modern, responsive Kanban board application built with Next.js, React, and Mat
 5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
+## 🚀 Deployment
+
+### **Netlify Deployment (Recommended)**
+
+This application is configured for deployment on Netlify with the following setup:
+
+1. **Build Configuration**
+
+   - The build process automatically copies the database file to the root directory
+   - Next.js API routes handle all backend functionality
+   - No external server required
+
+2. **Environment Variables**
+
+   - `NEXT_PUBLIC_API_BASE_URL`: Set to `/api` for production (default)
+   - The application uses relative API paths for deployment
+
+3. **Database**
+
+   - Uses a JSON file-based database (`tools/db.json`)
+   - Data persists across deployments
+   - No external database required
+
+4. **Deploy to Netlify**
+   ```bash
+   # Connect your repository to Netlify
+   # Build command: npm run build
+   # Publish directory: .next
+   # Node version: 18
+   ```
+
+### **Other Deployment Options**
+
+- **Vercel**: Similar to Netlify, works out of the box
+- **Railway**: Supports Node.js applications
+- **Heroku**: Requires Procfile configuration
+
 ## 📖 How to Use
 
 ### 🏠 **Main Kanban Board**
@@ -263,29 +300,6 @@ Modify the glassmorphism effects and styling in:
 
 - `src/app/globals.css`
 - Individual component `sx` props
-
-## 🚀 Deployment
-
-### **Build for Production**
-
-```bash
-npm run build
-npm start
-```
-
-### **Deploy to Vercel**
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Deploy automatically
-
-### **Environment Setup**
-
-Ensure your production environment has:
-
-- `NEXT_PUBLIC_API_BASE_URL` pointing to your API
-- Proper CORS configuration
-- Database connection (replace JSON Server)
 
 ## 🤝 Contributing
 

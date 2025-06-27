@@ -1,13 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: "/api/:path*",
-        destination: "http://localhost:4000/:path*",
-      },
-    ];
-  },
   // Enable React Strict Mode for better development experience
   reactStrictMode: true,
 

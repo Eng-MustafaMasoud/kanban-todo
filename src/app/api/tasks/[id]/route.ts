@@ -1,31 +1,70 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
+import path from "path";
 
-// client runn on 3000 port
-// server runn on 4000 port
-const API_URL = "http://127.0.0.1:4000";
+// Define types for the database
+interface Task {
+  id: string | number;
+  title: string;
+  description: string;
+  column: "backlog" | "in_progress" | "review" | "done";
+  status: "backlog" | "in_progress" | "review" | "done";
+  subtasks?: Array<{
+    id: number;
+    title: string;
+    status: "todo" | "doing" | "done";
+  }>;
+}
+
+interface Database {
+  tasks: Task[];
+  columns?: Array<{
+    id: string;
+    title: string;
+  }>;
+}
+
+// Path to the JSON database file
+const DB_PATH = path.join(process.cwd(), "db.json");
+
+// Helper function to read the database
+const readDB = (): Database => {
+  try {
+    const data = fs.readFileSync(DB_PATH, "utf8");
+    return JSON.parse(data);
+  } catch (error) {
+    console.error("Error reading database:", error);
+    // Return default structure if database file doesn't exist
+    return { tasks: [] };
+  }
+};
+
+// Helper function to write to the database
+const writeDB = (data: Database): boolean => {
+  try {
+    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+    return true;
+  } catch (error) {
+    console.error("Error writing to database:", error);
+    return false;
+  }
+};
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const response = await fetch(`${API_URL}/tasks/${params.id}`, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
+    const db = readDB();
+    const task = db.tasks.find((t: Task) => t.id.toString() === params.id);
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return NextResponse.json({ error: "Task not found" }, { status: 404 });
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!task) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    return NextResponse.json(task);
   } catch (error) {
-    console.error(`Error fetching task ${params.id}:`, error);
+    console.error("Error fetching task:", error);
     return NextResponse.json(
       { error: "Failed to fetch task" },
       { status: 500 }
@@ -39,23 +78,30 @@ export async function PUT(
 ) {
   try {
     const body = await request.json();
+    const db = readDB();
 
-    const response = await fetch(`${API_URL}/tasks/${params.id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+    const taskIndex = db.tasks.findIndex(
+      (t: Task) => t.id.toString() === params.id
+    );
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (taskIndex === -1) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    const data = await response.json();
-    return NextResponse.json(data);
+    // Update the task
+    db.tasks[taskIndex] = {
+      ...db.tasks[taskIndex],
+      ...body,
+      id: params.id, // Ensure ID doesn't change
+    };
+
+    if (writeDB(db)) {
+      return NextResponse.json(db.tasks[taskIndex]);
+    } else {
+      throw new Error("Failed to write to database");
+    }
   } catch (error) {
-    console.error(`Error updating task ${params.id}:`, error);
+    console.error("Error updating task:", error);
     return NextResponse.json(
       { error: "Failed to update task" },
       { status: 500 }
@@ -68,20 +114,26 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const response = await fetch(`${API_URL}/tasks/${params.id}`, {
-      method: "DELETE",
-    });
+    const db = readDB();
 
-    if (!response.ok) {
-      if (response.status === 404) {
-        return NextResponse.json({ error: "Task not found" }, { status: 404 });
-      }
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const taskIndex = db.tasks.findIndex(
+      (t: Task) => t.id.toString() === params.id
+    );
+
+    if (taskIndex === -1) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
     }
 
-    return new Response(null, { status: 204 });
+    // Remove the task
+    db.tasks.splice(taskIndex, 1);
+
+    if (writeDB(db)) {
+      return NextResponse.json({ message: "Task deleted successfully" });
+    } else {
+      throw new Error("Failed to write to database");
+    }
   } catch (error) {
-    console.error(`Error deleting task ${params.id}:`, error);
+    console.error("Error deleting task:", error);
     return NextResponse.json(
       { error: "Failed to delete task" },
       { status: 500 }
