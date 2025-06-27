@@ -4,7 +4,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:4000/:path*",
+        destination: "http://localhost:3001/:path*",
       },
     ];
   },
@@ -12,10 +12,6 @@ const nextConfig = {
   reactStrictMode: true,
   // Enable source maps in development
   productionBrowserSourceMaps: true,
-  // Enable webpack5 for better performance
-  future: {
-    webpack5: true,
-  },
 
   // Disable TypeScript type checking during build (handled by IDE)
   typescript: {
@@ -25,6 +21,23 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+
+  // Mobile optimizations
+  experimental: {
+    optimizeCss: true,
+  },
+
+  // Image optimization
+  images: {
+    domains: [],
+    unoptimized: false,
+  },
+
+  // Compression
+  compress: true,
+
+  // Power by header
+  poweredByHeader: false,
 };
 
 module.exports = nextConfig;

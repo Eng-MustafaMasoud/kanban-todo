@@ -161,7 +161,18 @@ const Board: React.FC = () => {
   // Backend configuration for drag and drop
   const backend = isMobile ? TouchBackend : HTML5Backend;
   const backendOptions = isMobile
-    ? { enableMouseEvents: true, enableKeyboardEvents: true }
+    ? {
+        enableMouseEvents: true,
+        enableKeyboardEvents: true,
+        enableTouchEvents: true,
+        delayTouchStart: 200,
+        delay: 0,
+        tolerance: 5,
+        scrollAngleRanges: [
+          { start: 30, end: 150 },
+          { start: 210, end: 330 },
+        ],
+      }
     : { enableKeyboardEvents: true };
 
   // Show loading state

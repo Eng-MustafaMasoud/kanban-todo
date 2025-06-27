@@ -48,7 +48,7 @@
       "id": "66db",
       "title": "task 2",
       "description": "desc",
-      "column": "in_progress",
+      "column": "backlog",
       "status": "backlog",
       "subtasks": [
         {
@@ -136,7 +136,7 @@
     {
       "title": "task 01",
       "description": "desc",
-      "column": "backlog",
+      "column": "in_progress",
       "status": "backlog",
       "id": "9396"
     },

@@ -311,3 +311,264 @@ This project is licensed under the MIT License.
 **Happy Task Management! 🎉**
 
 For questions or support, please open an issue in the repository.
+
+## 📱 Mobile Deployment & Troubleshooting
+
+### Mobile-Specific Optimizations
+
+The app includes several mobile optimizations:
+
+- **Touch-Friendly Interface**: All buttons and interactive elements are at least 44px
+- **Responsive Design**: Adapts to all screen sizes
+- **Touch Drag & Drop**: Uses TouchBackend for mobile drag and drop
+- **Viewport Optimization**: Proper meta tags for mobile browsers
+- **Touch Action Properties**: Prevents unwanted zoom and scrolling
+
+### Common Mobile Issues & Solutions
+
+#### 1. **App Not Working on Mobile After Deployment**
+
+**Problem**: The app works on desktop but not on mobile devices.
+
+**Solutions**:
+
+a) **Check API Configuration**:
+
+```bash
+# Ensure API server is running on the correct port
+npm run start:api
+```
+
+b) **Update API Base URL** (if deploying to production):
+
+```javascript
+// In src/lib/api.ts, update the API_BASE URL
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://your-api-domain.com";
+```
+
+c) **Check CORS Configuration**:
+
+```javascript
+// Add to your API server (tools/server.js)
+app.use(
+  cors({
+    origin: ["http://localhost:3000", "https://your-domain.com"],
+    credentials: true,
+  })
+);
+```
+
+#### 2. **Drag & Drop Not Working on Mobile**
+
+**Problem**: Drag and drop works on desktop but not on mobile.
+
+**Solutions**:
+
+a) **Check TouchBackend Configuration**:
+The app automatically uses TouchBackend for mobile devices with optimized settings:
+
+- Delay: 200ms to prevent accidental drags
+- Tolerance: 5px for better touch detection
+- Scroll angle ranges for better scrolling
+
+b) **Ensure Proper Touch Events**:
+
+```javascript
+// The app includes these CSS properties for mobile
+touch-action: manipulation;
+-webkit-user-select: none;
+```
+
+#### 3. **Viewport Issues on Mobile**
+
+**Problem**: The app doesn't display properly on mobile browsers.
+
+**Solutions**:
+
+a) **Check Meta Tags**: The app includes proper viewport meta tags:
+
+```html
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
+/>
+```
+
+b) **CSS Viewport Units**: The app uses proper viewport units for mobile:
+
+```css
+height: 100vh;
+height: -webkit-fill-available;
+```
+
+### Production Deployment
+
+#### 1. **Build for Production**
+
+```bash
+# Build the application
+npm run build
+
+# Start production server
+npm run start
+```
+
+#### 2. **Environment Variables**
+
+Create a `.env.local` file for production:
+
+```env
+NEXT_PUBLIC_API_BASE_URL=https://your-api-domain.com
+NEXT_PUBLIC_APP_URL=https://your-app-domain.com
+NEXT_PUBLIC_APP_ENV=production
+```
+
+#### 3. **Deploy to Vercel/Netlify**
+
+```bash
+# For Vercel
+vercel --prod
+
+# For Netlify
+netlify deploy --prod
+```
+
+#### 4. **API Deployment**
+
+Deploy your JSON Server API to a hosting service like:
+
+- **Railway**: `railway up`
+- **Render**: Connect your GitHub repository
+- **Heroku**: `heroku create && git push heroku main`
+
+## 📱 How to Use
+
+### Main Dashboard
+
+1. **View Tasks**: See all tasks organized in columns (Backlog, In Progress, Review, Done)
+2. **Create Task**: Click the "+" button in any column to add a new task
+3. **Edit Task**: Click on any task card to edit its details
+4. **Move Tasks**: Drag and drop tasks between columns
+5. **Search**: Use the search bar to filter tasks by title
+6. **Navigate**: Use pagination controls to browse through tasks
+
+### Task Details & Subtasks
+
+1. **Open Task Details**: Click on a task card to view its details
+2. **Manage Subtasks**:
+   - Add new subtasks using the "+" button
+   - Edit subtasks by clicking on them
+   - Delete subtasks using the delete button
+3. **Organize Subtasks**: Drag subtasks between "To Do", "Doing", and "Done" columns
+4. **Search Subtasks**: Use the search bar to filter subtasks
+5. **Navigate Pages**: Use pagination controls for each column
+
+### Theme Toggle
+
+- Click the theme toggle button in the top-right corner to switch between light and dark modes
+
+## 🏗️ Project Structure
+
+```
+kanban-todo/
+├── src/
+│   ├── app/                 # Next.js app directory
+│   │   ├── api/            # API routes
+│   │   ├── tasks/          # Task pages
+│   │   └── layout.tsx      # Root layout
+│   ├── components/         # React components
+│   │   ├── Board.tsx       # Main Kanban board
+│   │   ├── Column.tsx      # Individual columns
+│   │   ├── TaskCard.tsx    # Task cards
+│   │   └── ...
+│   ├── contexts/           # React contexts
+│   ├── features/           # Feature components
+│   ├── lib/               # Utility functions
+│   ├── providers/         # App providers
+│   └── store/             # Redux store
+├── tools/
+│   ├── db.json            # JSON Server database
+│   └── server.js          # Backend server
+└── public/                # Static assets
+```
+
+## 🔧 Available Scripts
+
+- `npm run dev` - Start development server with Turbopack
+- `npm run build` - Build the application for production
+- `npm run start` - Start the production server
+- `npm run lint` - Run ESLint for code quality
+- `npm run start:api` - Start the JSON Server API
+- `npm run build:prod` - Build for production with export
+- `npm run deploy` - Build and start production server
+
+## 🌐 API Endpoints
+
+The backend provides the following REST API endpoints:
+
+- `GET /tasks` - Get all tasks
+- `POST /tasks` - Create a new task
+- `PUT /tasks/:id` - Update a task
+- `DELETE /tasks/:id` - Delete a task
+- `GET /subtasks` - Get all subtasks
+- `POST /subtasks` - Create a new subtask
+- `PUT /subtasks/:id` - Update a subtask
+- `DELETE /subtasks/:id` - Delete a subtask
+
+## 🎨 Customization
+
+### Themes
+
+The app supports custom theming through Material-UI's theme system. Modify the theme configuration in `src/contexts/ThemeContext.tsx`.
+
+### Styling
+
+All components use Material-UI's styling system with CSS-in-JS. Customize styles by modifying the `sx` props in each component.
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. **Port Already in Use**
+
+   - The app will automatically use the next available port
+   - Check the terminal output for the correct URL
+
+2. **Backend Server Not Running**
+
+   - Make sure JSON Server is running on port 3001
+   - Check that `tools/db.json` exists
+
+3. **Drag & Drop Not Working**
+
+   - Ensure you're using a modern browser
+   - Check that React DnD is properly initialized
+   - On mobile, ensure TouchBackend is working
+
+4. **Mobile Issues**
+   - Check viewport meta tags are present
+   - Ensure API server is accessible from mobile device
+   - Verify CORS configuration for production
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+**Eng. Mustafa Masoud**
+
+- GitHub: [@Eng-MustafaMasoud](https://github.com/Eng-MustafaMasoud)
+
+---
+
+⭐ If you find this project helpful, please give it a star!

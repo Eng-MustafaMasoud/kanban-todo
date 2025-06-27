@@ -27,12 +27,27 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden; /* Prevent horizontal scroll on mobile */
+  /* Mobile-specific optimizations */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Prevent zoom on input focus */
+  touch-action: manipulation;
 }
 
 /* Responsive viewport */
 @media (max-width: 768px) {
   body {
     font-size: 14px;
+    /* Prevent horizontal scrolling */
+    width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Ensure proper viewport on mobile */
+  html {
+    width: 100%;
+    overflow-x: hidden;
   }
 }
 
@@ -110,10 +125,25 @@ body {
   .MuiIconButton-root {
     min-height: 44px;
     min-width: 44px;
+    /* Improve touch response */
+    touch-action: manipulation;
   }
 
   .MuiCard-root {
     touch-action: manipulation;
+  }
+
+  /* Prevent zoom on input focus */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+    touch-action: manipulation;
+  }
+
+  /* Better mobile scrolling */
+  .MuiBox-root {
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -124,11 +154,15 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  /* Improve drag performance */
+  touch-action: pan-x pan-y;
 }
 
 /* Smooth scrolling for better mobile experience */
 html {
   scroll-behavior: smooth;
+  /* Prevent horizontal scroll */
+  overflow-x: hidden;
 }
 
 /* Better touch targets for mobile */
@@ -140,5 +174,46 @@ html {
 
   .MuiTextField-root {
     margin-bottom: 16px;
+  }
+
+  /* Ensure proper spacing for mobile */
+  .MuiContainer-root {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* Better mobile navigation */
+  .MuiAppBar-root {
+    position: fixed !important;
+  }
+
+  /* Improve mobile drawer */
+  .MuiDrawer-paper {
+    width: 280px !important;
+  }
+}
+
+/* Mobile-specific drag and drop improvements */
+@media (max-width: 768px) {
+  /* Improve drag performance on mobile */
+  [data-rbd-draggable-id] {
+    touch-action: pan-x pan-y;
+  }
+
+  /* Better mobile drop zones */
+  [data-rbd-droppable-id] {
+    min-height: 100px;
+  }
+}
+
+/* Prevent mobile browser address bar issues */
+@media (max-width: 768px) {
+  body {
+    /* Prevent viewport issues on mobile */
+    position: relative;
+    min-height: 100vh;
+    /* Use viewport units carefully */
+    height: 100vh;
+    height: -webkit-fill-available;
   }
 }
