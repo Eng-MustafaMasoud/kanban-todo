@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "start:api": "json-server --watch tools/db.json --port 3001",
+    "start:api": "json-server --watch tools/db.json --port 4000",
     "deploy": "npm run build && npm run start"
   },
   "dependencies": {
