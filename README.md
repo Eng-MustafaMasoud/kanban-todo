@@ -105,9 +105,9 @@ yarn start:api --port 4000
 3. **Start the development server**
 
    ```bash
-   npm run dev
+   npm run start:api
    # or
-   yarn dev
+   yarn start:api
    ```
 
 4. **Open your browser**
