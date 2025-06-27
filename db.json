@@ -1,0 +1,40 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "title": "Design homepage",
+      "description": "Create wireframes and mockups for the homepage",
+      "column": "backlog"
+    },
+    {
+      "id": "2",
+      "title": "Implement authentication",
+      "description": "Set up user login and registration",
+      "column": "in_progress"
+    },
+    {
+      "id": "3",
+      "title": "Write API documentation",
+      "description": "Document all API endpoints and request/response formats",
+      "column": "review"
+    },
+    {
+      "id": "4",
+      "title": "Deploy to production",
+      "description": "Set up CI/CD pipeline and deploy the application",
+      "column": "done"
+    },
+    {
+      "id": "5",
+      "title": "Add dark mode",
+      "description": "Implement dark mode toggle and theme",
+      "column": "backlog"
+    },
+    {
+      "id": "6",
+      "title": "Optimize performance",
+      "description": "Identify and fix performance bottlenecks",
+      "column": "backlog"
+    }
+  ]
+}
