@@ -1,8 +1,19 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, useTheme, useMediaQuery, Paper } from "@mui/material";
-import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragOverlay,
+} from "@dnd-kit/core";
+import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import Column from "./Column";
 import TaskModal from "./TaskModal";
 import { useSelector, useDispatch } from "react-redux";
@@ -11,6 +22,7 @@ import { Task } from "@/lib/api";
 import { addTask, editTask, deleteTask, fetchTasks } from "@/store/tasksSlice";
 import { fetchColumns } from "@/store/columnsSlice";
 import NotePenLoader from "./NotePenLoader";
+import TaskCard from "./TaskCard";
 
 // ColumnType from ColumnProps
 export type ColumnType = "backlog" | "in_progress" | "review" | "done";
@@ -23,9 +35,20 @@ export const COLUMNS: ColumnType[] = [
 
 const Board: React.FC = () => {
   const [mounted, setMounted] = useState(false);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.down("md"));
+
+  // Configure sensors for better performance
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 8px movement required before drag starts
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
 
   const tasks = useSelector((state: RootState) => state.tasks.tasks);
   const columnsLoading = useSelector(
@@ -109,19 +132,30 @@ const Board: React.FC = () => {
     }
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
+  // Memoized drag handlers
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const { active } = event;
+      const taskId = active.id as string;
+      const found = tasks.find((t) => String(t.id) === String(taskId));
+      setActiveTask(found || null);
+    },
+    [tasks]
+  );
 
-    if (!over || !active) return;
-
-    const taskId = active.id as string;
-    const newColumn = over.id as ColumnType;
-
-    // Only move if dropping on a valid column
-    if (COLUMNS.includes(newColumn)) {
-      await handleMoveTask(taskId, newColumn);
-    }
-  };
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      setActiveTask(null);
+      const { active, over } = event;
+      if (!over || !active) return;
+      const taskId = active.id as string;
+      const newColumn = over.id as ColumnType;
+      if (COLUMNS.includes(newColumn)) {
+        await handleMoveTask(taskId, newColumn);
+      }
+    },
+    [handleMoveTask]
+  );
 
   const handleSubmitTask = async (
     values: Omit<Task, "id">,
@@ -203,7 +237,13 @@ const Board: React.FC = () => {
   }
 
   return (
-    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      modifiers={[restrictToWindowEdges]}
+    >
       <Box
         sx={{
           minHeight: "100vh",
@@ -314,6 +354,17 @@ const Board: React.FC = () => {
           task={editingTask}
           isSubmitting={isSubmitting}
         />
+        {/* Drag Overlay for better performance */}
+        <DragOverlay>
+          {activeTask ? (
+            <TaskCard
+              task={activeTask}
+              onEdit={() => {}}
+              onDelete={() => {}}
+              disableCardClick={true}
+            />
+          ) : null}
+        </DragOverlay>
       </Box>
     </DndContext>
   );
