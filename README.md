@@ -7,6 +7,46 @@ A modern, responsive Kanban board application built with Next.js 15, React 19, a
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
 ![Material-UI](https://img.shields.io/badge/Material--UI-5-purple?style=for-the-badge&logo=mui)
 
+---
+
+## ⚡ Local Development
+
+- **No separate backend server is required.**
+- All API routes are handled by Next.js (see `/src/app/api`).
+- The app uses a local JSON file (`db.json`) for data storage in development.
+- **Just run the Next.js dev server:**
+
+  ```bash
+  npm install
+  npm run dev
+  # or
+  yarn dev
+  ```
+
+- Open your browser at [http://localhost:3000](http://localhost:3000)
+
+**To run the app (and API) on port 4000:**
+
+```bash
+npm run dev -- -p 4000
+# or
+yarn dev --port 4000
+```
+
+Then open [http://localhost:4000](http://localhost:4000)
+
+**Local API:**
+
+- When you run the app locally, the API routes are available at `/api` (e.g., `http://localhost:3000/api` or `http://localhost:4000/api`).
+- You do **NOT** need to run any separate API or backend server. All backend logic is handled by Next.js API routes automatically.
+
+**Note:**
+
+- The `db.json` file is used for local development only. Changes you make are saved to this file.
+- In production (e.g., Netlify), the app uses in-memory storage (data resets on every redeploy or cold start).
+
+---
+
 ## 🚀 Features
 
 ### 🎨 **Modern Design**
@@ -70,12 +110,11 @@ A modern, responsive Kanban board application built with Next.js 15, React 19, a
    # or
    yarn dev
    ```
-npm run start:api for server running
-# or
-yarn start:api
 
 4. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
+
+---
 
 ## 🚀 Deployment
 
@@ -96,8 +135,8 @@ This application is configured for deployment on Netlify with the following setu
 
 3. **Database**
 
-   - Uses a JSON file-based database (`tools/db.json`)
-   - Data persists across deployments
+   - Uses a JSON file-based database (`tools/db.json`) **for local development only**
+   - **In production, data is stored in memory and resets on every redeploy or cold start**
    - No external database required
 
 4. **Deploy to Netlify**
@@ -113,6 +152,8 @@ This application is configured for deployment on Netlify with the following setu
 - **Vercel**: Similar to Netlify, works out of the box
 - **Railway**: Supports Node.js applications
 - **Heroku**: Requires Procfile configuration
+
+---
 
 ## 📖 How to Use
 
@@ -513,61 +554,4 @@ The backend provides the following REST API endpoints:
 - `GET /subtasks` - Get all subtasks
 - `POST /subtasks` - Create a new subtask
 - `PUT /subtasks/:id` - Update a subtask
-- `DELETE /subtasks/:id` - Delete a subtask
-
-## 🎨 Customization
-
-### Themes
-
-The app supports custom theming through Material-UI's theme system. Modify the theme configuration in `src/contexts/ThemeContext.tsx`.
-
-### Styling
-
-All components use Material-UI's styling system with CSS-in-JS. Customize styles by modifying the `sx` props in each component.
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-1. **Port Already in Use**
-
-   - The app will automatically use the next available port
-   - Check the terminal output for the correct URL
-
-2. **Backend Server Not Running**
-
-   - Make sure JSON Server is running on port 3001
-   - Check that `tools/db.json` exists
-
-3. **Drag & Drop Not Working**
-
-   - Ensure you're using a modern browser
-   - Check that React DnD is properly initialized
-   - On mobile, ensure TouchBackend is working
-
-4. **Mobile Issues**
-   - Check viewport meta tags are present
-   - Ensure API server is accessible from mobile device
-   - Verify CORS configuration for production
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 👨‍💻 Author
-
-**Eng. Mustafa Masoud**
-
-- GitHub: [@Eng-MustafaMasoud](https://github.com/Eng-MustafaMasoud)
-
----
-
-⭐ If you find this project helpful, please give it a star!
+- `DELETE /subtasks/:id`
