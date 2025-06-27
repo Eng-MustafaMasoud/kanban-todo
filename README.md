@@ -139,11 +139,9 @@ This application is configured for deployment on Netlify with the following setu
    - No external database required
 
 4. **Deploy to Netlify**
-   ```bash
-   # Connect your repository to Netlify
-   # Build command: npm run build
-   # Publish directory: .next
-   # Node version: 18
+
+
+ https://kanban-assessment-todo.netlify.app/
    ```
 
 ### **Other Deployment Options**
