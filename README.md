@@ -1,9 +1,9 @@
 # 🎯 Kanban Task Management App
 
-A modern, responsive Kanban board application built with Next.js, React, and Material-UI for efficient task and subtask management.
+A modern, responsive Kanban board application built with Next.js 15, React 19, and Material-UI for efficient task and subtask management.
 
-![Kanban App Preview](https://img.shields.io/badge/Next.js-14-black?style=for-the-badge&logo=next.js)
-![React](https://img.shields.io/badge/React-18-blue?style=for-the-badge&logo=react)
+![Kanban App Preview](https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js)
+![React](https://img.shields.io/badge/React-19-blue?style=for-the-badge&logo=react)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript)
 ![Material-UI](https://img.shields.io/badge/Material--UI-5-purple?style=for-the-badge&logo=mui)
 
@@ -19,7 +19,7 @@ A modern, responsive Kanban board application built with Next.js, React, and Mat
 ### 📋 **Task Management**
 
 - **Kanban Board**: Four columns (Backlog, In Progress, Review, Done)
-- **Drag & Drop**: Move tasks between columns seamlessly
+- **Drag & Drop**: Move tasks between columns seamlessly with optimized performance
 - **Add/Edit/Delete**: Full CRUD operations for tasks
 - **Search**: Find tasks quickly with real-time search
 - **Infinite Scroll**: Load more tasks as you scroll
@@ -63,16 +63,7 @@ A modern, responsive Kanban board application built with Next.js, React, and Mat
    yarn install
    ```
 
-3. **Start the API server**
-
-   ```bash
-   # In a new terminal
-   cd tools
-   npm install -g json-server
-   json-server --watch db.json --port 4000
-   ```
-
-4. **Start the development server**
+3. **Start the development server**
 
    ```bash
    npm run dev
@@ -80,7 +71,7 @@ A modern, responsive Kanban board application built with Next.js, React, and Mat
    yarn dev
    ```
 
-5. **Open your browser**
+4. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 🚀 Deployment
@@ -92,7 +83,7 @@ This application is configured for deployment on Netlify with the following setu
 1. **Build Configuration**
 
    - The build process automatically copies the database file to the root directory
-   - Next.js API routes handle all backend functionality
+   - Next.js 15 API routes handle all backend functionality
    - No external server required
 
 2. **Environment Variables**
@@ -209,11 +200,11 @@ This application is configured for deployment on Netlify with the following setu
 
 ### **Frontend**
 
-- **Next.js 14**: React framework with App Router
-- **React 18**: Modern React with hooks
+- **Next.js 15**: React framework with App Router
+- **React 19**: Modern React with hooks
 - **TypeScript**: Type-safe development
 - **Material-UI 5**: Component library and theming
-- **React DnD**: Drag and drop functionality
+- **@dnd-kit/core**: Modern drag and drop functionality
 - **React Query**: Data fetching and caching
 
 ### **State Management**
@@ -224,9 +215,10 @@ This application is configured for deployment on Netlify with the following setu
 
 ### **Backend**
 
-- **JSON Server**: Mock REST API
+- **Next.js 15 API Routes**: Built-in API endpoints
+- **JSON File Database**: Local data persistence
 - **RESTful API**: Standard HTTP endpoints
-- **Pagination**: Efficient data loading
+- **CORS Support**: Cross-origin request handling
 
 ### **Styling**
 
@@ -267,15 +259,22 @@ kanban-todo/
 
 ### **Environment Variables**
 
-Create a `.env.local` file in the root directory:
+Create a `.env.local` file in the root directory (optional):
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:4000
+NEXT_PUBLIC_API_BASE_URL=/api
 ```
+
+**Note**: The app uses relative API paths by default, so this environment variable is optional.
 
 ### **API Configuration**
 
-The app uses JSON Server for the backend. The server runs on port 4000 by default.
+The app uses Next.js 15 API routes for the backend. All API endpoints are served from `/api/*` and handle:
+
+- Task CRUD operations
+- Column management
+- CORS requests
+- Data persistence to JSON file
 
 ## 🎨 Customization
 
@@ -316,9 +315,9 @@ This project is licensed under the MIT License.
 ## 🙏 Acknowledgments
 
 - **Material-UI** for the beautiful component library
-- **React DnD** for smooth drag and drop functionality
+- **@dnd-kit/core** for smooth drag and drop functionality
 - **Next.js** for the excellent React framework
-- **JSON Server** for the mock API
+- **React 19** for the modern React features
 
 ---
 
@@ -349,28 +348,33 @@ The app includes several mobile optimizations:
 a) **Check API Configuration**:
 
 ```bash
-# Ensure API server is running on the correct port
-npm run start:api
+# Ensure Next.js development server is running
+npm run dev
 ```
 
 b) **Update API Base URL** (if deploying to production):
 
 ```javascript
-// In src/lib/api.ts, update the API_BASE URL
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "https://your-api-domain.com";
+// In src/lib/api.ts, the API_BASE URL is automatically configured
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 ```
 
 c) **Check CORS Configuration**:
 
+The app includes built-in CORS handling in Next.js API routes:
+
 ```javascript
-// Add to your API server (tools/server.js)
-app.use(
-  cors({
-    origin: ["http://localhost:3000", "https://your-domain.com"],
-    credentials: true,
-  })
-);
+// API routes automatically handle CORS
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
 ```
 
 #### 2. **Drag & Drop Not Working on Mobile**
@@ -379,12 +383,12 @@ app.use(
 
 **Solutions**:
 
-a) **Check TouchBackend Configuration**:
-The app automatically uses TouchBackend for mobile devices with optimized settings:
+a) **Check @dnd-kit Configuration**:
+The app uses @dnd-kit/core with optimized settings for mobile:
 
-- Delay: 200ms to prevent accidental drags
-- Tolerance: 5px for better touch detection
-- Scroll angle ranges for better scrolling
+- PointerSensor with activation constraints
+- Touch-friendly drag detection
+- Proper touch event handling
 
 b) **Ensure Proper Touch Events**:
 
@@ -392,28 +396,6 @@ b) **Ensure Proper Touch Events**:
 // The app includes these CSS properties for mobile
 touch-action: manipulation;
 -webkit-user-select: none;
-```
-
-#### 3. **Viewport Issues on Mobile**
-
-**Problem**: The app doesn't display properly on mobile browsers.
-
-**Solutions**:
-
-a) **Check Meta Tags**: The app includes proper viewport meta tags:
-
-```html
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"
-/>
-```
-
-b) **CSS Viewport Units**: The app uses proper viewport units for mobile:
-
-```css
-height: 100vh;
-height: -webkit-fill-available;
 ```
 
 ### Production Deployment
