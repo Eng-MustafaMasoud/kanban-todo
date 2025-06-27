@@ -28,12 +28,11 @@ A modern, responsive Kanban board application built with Next.js 15, React 19, a
 **To run the app (and API) on port 4000:**
 
 ```bash
-npm run dev -- -p 4000
+npm run start:api -- -p 4000
 # or
-yarn dev --port 4000
+yarn start:api --port 4000
 ```
 
-Then open [http://localhost:4000](http://localhost:4000)
 
 **Local API:**
 
