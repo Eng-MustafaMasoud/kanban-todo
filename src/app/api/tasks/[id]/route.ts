@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 
 // client runn on 3000 port
-// server runn on 4000 port
-const API_URL = "http://127.0.0.1:4000";
+// server runn on 3001 port
+const API_URL = "http://127.0.0.1:3001";
 
 export async function GET(
   request: Request,

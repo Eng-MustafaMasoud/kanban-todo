@@ -10,8 +10,6 @@ const nextConfig = {
   },
   // Enable React Strict Mode for better development experience
   reactStrictMode: true,
-  // Enable source maps in development
-  productionBrowserSourceMaps: true,
 
   // Disable TypeScript type checking during build (handled by IDE)
   typescript: {
@@ -20,17 +18,6 @@ const nextConfig = {
   // Disable ESLint during build (handled by IDE)
   eslint: {
     ignoreDuringBuilds: true,
-  },
-
-  // Mobile optimizations
-  experimental: {
-    optimizeCss: true,
-  },
-
-  // Image optimization
-  images: {
-    domains: [],
-    unoptimized: false,
   },
 
   // Compression
