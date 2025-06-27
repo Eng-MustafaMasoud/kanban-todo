@@ -14,7 +14,7 @@ import {
 } from "@mui/icons-material";
 import { Task } from "@/lib/api";
 import TaskCard from "./TaskCard";
-import { useDrop } from "react-dnd";
+import { useDroppable } from "@dnd-kit/core";
 import { useMemo, useState, useEffect } from "react";
 import { COLUMNS, ColumnType } from "./Board";
 import { useSelector } from "react-redux";
@@ -25,7 +25,6 @@ interface ColumnProps {
   onAddTask: (columnId: ColumnType) => void;
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
-  onMoveTask: (taskId: string, newColumn: ColumnType) => void;
   selectedTaskId?: string;
   search?: string;
 }
@@ -57,7 +56,6 @@ export default function Column({
   onAddTask,
   onEditTask,
   onDeleteTask,
-  onMoveTask,
   selectedTaskId,
   search = "",
 }: ColumnProps) {
@@ -65,20 +63,8 @@ export default function Column({
   const allTasks = useSelector((state: RootState) => state.tasks.tasks);
   const isLoading = useSelector((state: RootState) => state.tasks.loading);
 
-  const [, drop] = useDrop({
-    accept: "TASK",
-    drop: (item: { id: string }) => {
-      console.log("Drop event triggered:", {
-        taskId: item.id,
-        targetColumn: id,
-      });
-      onMoveTask(item.id, id);
-    },
-    canDrop: (item: { id: string }) => {
-      // Prevent dropping on the same column
-      const task = allTasks.find((t) => String(t.id) === String(item.id));
-      return Boolean(task && task.column !== id);
-    },
+  const { setNodeRef } = useDroppable({
+    id: id,
   });
 
   // Pagination state
@@ -168,13 +154,9 @@ export default function Column({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [id, totalPages]);
 
-  const dropRef = (node: HTMLDivElement | null) => {
-    drop(node);
-  };
-
   return (
     <Paper
-      ref={dropRef}
+      ref={setNodeRef}
       data-column-id={id}
       tabIndex={0}
       sx={{

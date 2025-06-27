@@ -10,7 +10,7 @@ import { SubTask } from "@/lib/api";
 import SubTaskCard from "./SubTaskCard";
 import { useEffect } from "react";
 import { SubTaskColumnType } from "./TaskDetailsBoard";
-import { useDrop } from "react-dnd";
+import { useDroppable } from "@dnd-kit/core";
 
 interface SubTaskColumnProps {
   id: SubTaskColumnType;
@@ -18,7 +18,6 @@ interface SubTaskColumnProps {
   onAddSubTask: (columnId: SubTaskColumnType) => void;
   onEditSubTask: (subTask: SubTask) => void;
   onDeleteSubTask: (id: number) => void;
-  onMoveSubTask: (subTaskId: number, newColumn: SubTaskColumnType) => void;
   currentPage: number;
   totalPages: number;
   onPageChange: (newPage: number) => void;
@@ -31,23 +30,13 @@ export default function SubTaskColumn({
   onAddSubTask,
   onEditSubTask,
   onDeleteSubTask,
-  onMoveSubTask,
   currentPage,
   totalPages,
   onPageChange,
   totalItems,
 }: SubTaskColumnProps) {
-  const [, drop] = useDrop({
-    accept: "SUBTASK",
-    drop: (item: { id: number; type: string }) => {
-      if (item.type === "SUBTASK") {
-        onMoveSubTask(item.id, id);
-      }
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-      canDrop: monitor.canDrop(),
-    }),
+  const { setNodeRef } = useDroppable({
+    id: id,
   });
 
   const getColumnTitle = (columnId: SubTaskColumnType) => {
@@ -72,7 +61,7 @@ export default function SubTaskColumn({
 
   return (
     <Paper
-      ref={drop as any}
+      ref={setNodeRef}
       sx={{
         width: { xs: "100%", sm: 320, md: 350 },
         minHeight: { xs: 400, sm: 500, md: 600 },
@@ -125,7 +114,7 @@ export default function SubTaskColumn({
             variant="h6"
             fontWeight="700"
             sx={{
-              background: (theme) => {
+              background: () => {
                 switch (id) {
                   case "todo":
                     return "linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%)";

@@ -39,13 +39,27 @@ const readDB = (): Database => {
   }
 };
 
+// Handle OPTIONS requests for CORS
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
+
 export async function GET() {
   try {
     const db = readDB();
 
     // If columns exist in the database, return them
     if (db.columns && db.columns.length > 0) {
-      return NextResponse.json(db.columns);
+      const response = NextResponse.json(db.columns);
+      response.headers.set("Access-Control-Allow-Origin", "*");
+      return response;
     }
 
     // Otherwise, return default columns
@@ -56,7 +70,9 @@ export async function GET() {
       { id: "done", title: "Done" },
     ];
 
-    return NextResponse.json(defaultColumns);
+    const response = NextResponse.json(defaultColumns);
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   } catch (error) {
     console.error("Error fetching columns:", error);
     return NextResponse.json(

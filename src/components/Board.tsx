@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Box, Typography, useTheme, useMediaQuery, Paper } from "@mui/material";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
-import { TouchBackend } from "react-dnd-touch-backend";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import Column from "./Column";
 import TaskModal from "./TaskModal";
 import { useSelector, useDispatch } from "react-redux";
@@ -28,9 +26,7 @@ const Board: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.down("md"));
-  const isDesktop = useMediaQuery(theme.breakpoints.up("lg"));
 
-  const columns = useSelector((state: RootState) => state.columns.columns);
   const tasks = useSelector((state: RootState) => state.tasks.tasks);
   const columnsLoading = useSelector(
     (state: RootState) => state.columns.loading
@@ -113,6 +109,20 @@ const Board: React.FC = () => {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || !active) return;
+
+    const taskId = active.id as string;
+    const newColumn = over.id as ColumnType;
+
+    // Only move if dropping on a valid column
+    if (COLUMNS.includes(newColumn)) {
+      await handleMoveTask(taskId, newColumn);
+    }
+  };
+
   const handleSubmitTask = async (
     values: Omit<Task, "id">,
     taskId?: string
@@ -158,23 +168,6 @@ const Board: React.FC = () => {
     setSelectedTaskId(undefined);
   };
 
-  // Backend configuration for drag and drop
-  const backend = isMobile ? TouchBackend : HTML5Backend;
-  const backendOptions = isMobile
-    ? {
-        enableMouseEvents: true,
-        enableKeyboardEvents: true,
-        enableTouchEvents: true,
-        delayTouchStart: 200,
-        delay: 0,
-        tolerance: 5,
-        scrollAngleRanges: [
-          { start: 30, end: 150 },
-          { start: 210, end: 330 },
-        ],
-      }
-    : { enableKeyboardEvents: true };
-
   // Show loading state
   if (columnsLoading || tasksLoading) {
     return (
@@ -210,7 +203,7 @@ const Board: React.FC = () => {
   }
 
   return (
-    <DndProvider backend={backend} options={backendOptions}>
+    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <Box
         sx={{
           minHeight: "100vh",
@@ -253,100 +246,30 @@ const Board: React.FC = () => {
 
         {/* Board Layout */}
         <Box
+          className="kanaban-columns"
           sx={{
-            display: "flex",
-            flexDirection: { xs: "column", lg: "row" },
-            gap: { xs: 2, sm: 3, md: 4 },
-            height: { xs: "auto", lg: "calc(100vh - 200px)" },
-            overflow: { xs: "visible", lg: "hidden" },
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              sm: "repeat(2, 1fr)",
+              md: "repeat(4, 1fr)",
+            },
+            gap: { xs: 2, sm: 3 },
+            maxWidth: "100%",
+            overflowX: "auto",
           }}
         >
-          {/* Desktop Layout - Horizontal Columns */}
-          {isDesktop && (
-            <Box
-              sx={{
-                display: "flex",
-                gap: { md: 2, lg: 3 },
-                width: "100%",
-                overflowX: "auto",
-                pb: 2,
-                "&::-webkit-scrollbar": {
-                  height: 8,
-                },
-                "&::-webkit-scrollbar-track": {
-                  background: (theme) =>
-                    theme.palette.mode === "dark"
-                      ? "rgba(255,255,255,0.1)"
-                      : "rgba(0,0,0,0.1)",
-                  borderRadius: 4,
-                },
-                "&::-webkit-scrollbar-thumb": {
-                  background: (theme) =>
-                    theme.palette.mode === "dark"
-                      ? "rgba(255,255,255,0.3)"
-                      : "rgba(0,0,0,0.3)",
-                  borderRadius: 4,
-                  "&:hover": {
-                    background: (theme) =>
-                      theme.palette.mode === "dark"
-                        ? "rgba(255,255,255,0.5)"
-                        : "rgba(0,0,0,0.5)",
-                  },
-                },
-              }}
-            >
-              {columns.map((column) => (
-                <Box
-                  key={column.id}
-                  sx={{
-                    minWidth: { md: 320, lg: 350 },
-                    flex: 1,
-                    maxWidth: { md: 320, lg: 350 },
-                  }}
-                >
-                  <Column
-                    id={column.id as ColumnType}
-                    onAddTask={handleAddTask}
-                    onEditTask={handleEditTask}
-                    onDeleteTask={handleDeleteTask}
-                    onMoveTask={handleMoveTask}
-                    selectedTaskId={selectedTaskId}
-                    search={searchTerm}
-                  />
-                </Box>
-              ))}
-            </Box>
-          )}
-
-          {/* Mobile/Tablet Layout - Vertical Columns */}
-          {!isDesktop && (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(2, 1fr)",
-                  md: "repeat(3, 1fr)",
-                },
-                gap: { xs: 2, sm: 3 },
-                height: "auto",
-              }}
-            >
-              {columns.map((column) => (
-                <Box key={column.id} sx={{ height: "auto" }}>
-                  <Column
-                    id={column.id as ColumnType}
-                    onAddTask={handleAddTask}
-                    onEditTask={handleEditTask}
-                    onDeleteTask={handleDeleteTask}
-                    onMoveTask={handleMoveTask}
-                    selectedTaskId={selectedTaskId}
-                    search={searchTerm}
-                  />
-                </Box>
-              ))}
-            </Box>
-          )}
+          {COLUMNS.map((columnId) => (
+            <Column
+              key={columnId}
+              id={columnId}
+              onAddTask={handleAddTask}
+              onEditTask={handleEditTask}
+              onDeleteTask={handleDeleteTask}
+              selectedTaskId={selectedTaskId}
+              search={searchTerm}
+            />
+          ))}
         </Box>
 
         {/* Empty State */}
@@ -388,12 +311,11 @@ const Board: React.FC = () => {
           open={isModalOpen}
           onClose={handleCloseModal}
           onSubmit={handleSubmitTask}
-          onDelete={handleDeleteTask}
           task={editingTask}
           isSubmitting={isSubmitting}
         />
       </Box>
-    </DndProvider>
+    </DndContext>
   );
 };
 

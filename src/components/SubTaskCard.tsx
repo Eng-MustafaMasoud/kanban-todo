@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
 import { SubTask, SubTaskColumnType } from "@/lib/api";
-import { useDrag } from "react-dnd";
+import { useDraggable } from "@dnd-kit/core";
 
 interface SubTaskCardProps {
   subTask: SubTask;
@@ -28,12 +28,12 @@ export default function SubTaskCard({
 }: SubTaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
-  const [{ isDragging }, drag] = useDrag({
-    type: "SUBTASK",
-    item: { id: subTask.id, type: "SUBTASK" },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: subTask.id,
+    data: {
+      type: "SUBTASK",
+      subTask,
+    },
   });
 
   const getStatusColor = (status: string) => {
@@ -64,7 +64,9 @@ export default function SubTaskCard({
 
   return (
     <Card
-      ref={drag}
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
       sx={{
         background: (theme) =>
           theme.palette.mode === "dark"

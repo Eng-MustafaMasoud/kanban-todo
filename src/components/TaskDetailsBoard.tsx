@@ -11,8 +11,7 @@ import {
   FormControl,
   Chip,
 } from "@mui/material";
-import { DndProvider } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { DndContext, closestCenter, DragEndEvent } from "@dnd-kit/core";
 import SubTaskColumn from "./SubTaskColumn";
 import SubTaskModal from "./SubTaskModal";
 import { RootState, AppDispatch } from "@/store";
@@ -237,6 +236,20 @@ function TaskDetailsBoardContent({ parentTaskId }: { parentTaskId: string }) {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || !active) return;
+
+    const subTaskId = active.id as number;
+    const newColumn = over.id as SubTaskColumnType;
+
+    // Only move if dropping on a valid column
+    if (SUB_TASK_COLUMNS.includes(newColumn)) {
+      await moveSubTask(subTaskId, newColumn);
+    }
+  };
+
   // Handle main task status change
   const handleMainTaskStatusChange = async (
     newStatus: "backlog" | "in_progress" | "review" | "done"
@@ -319,7 +332,7 @@ function TaskDetailsBoardContent({ parentTaskId }: { parentTaskId: string }) {
   }
 
   return (
-    <DndProvider backend={HTML5Backend}>
+    <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <Box sx={{ p: 4, maxWidth: "100%" }}>
         {/* Header */}
         <Box
@@ -569,7 +582,6 @@ function TaskDetailsBoardContent({ parentTaskId }: { parentTaskId: string }) {
                 onAddSubTask={handleAddSubTask}
                 onEditSubTask={handleEditSubTask}
                 onDeleteSubTask={handleDeleteSubTask}
-                onMoveSubTask={moveSubTask}
                 subTasks={getPaginatedSubTasks(columnId)}
                 currentPage={pagination[columnId]}
                 totalPages={getTotalPages(columnId)}
@@ -593,6 +605,6 @@ function TaskDetailsBoardContent({ parentTaskId }: { parentTaskId: string }) {
           onDelete={async (id) => handleDeleteSubTask(id)}
         />
       </Box>
-    </DndProvider>
+    </DndContext>
   );
 }

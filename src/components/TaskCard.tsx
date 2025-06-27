@@ -11,7 +11,8 @@ import {
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import { Task } from "@/lib/api";
-import { useDrag } from "react-dnd";
+import { useDraggable, DraggableAttributes } from "@dnd-kit/core";
+import { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 
 interface TaskCardProps {
   task: Task;
@@ -19,6 +20,8 @@ interface TaskCardProps {
   onDelete: (taskId: string) => void;
   selected?: boolean;
   disableCardClick?: boolean;
+  dragHandleProps?: DraggableAttributes;
+  listeners?: SyntheticListenerMap;
 }
 
 export default function TaskCard({
@@ -27,19 +30,23 @@ export default function TaskCard({
   onDelete,
   selected = false,
   disableCardClick = false,
+  dragHandleProps,
+  listeners,
 }: TaskCardProps) {
-  // react-dnd drag source
-  const [{ isDragging }, drag] = useDrag({
-    type: "TASK",
-    item: { id: String(task.id) },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
+  // @dnd-kit drag source
+  const {
+    attributes,
+    listeners: dragListeners,
+    setNodeRef,
+    isDragging,
+  } = useDraggable({
+    id: String(task.id),
   });
 
-  const dragRef = (node: HTMLDivElement | null) => {
-    drag(node);
-  };
+  // Use provided listeners and attributes if available (for TaskStatusBoard)
+  const finalListeners = listeners || dragListeners;
+  const finalAttributes = dragHandleProps || attributes;
+  const finalRef = setNodeRef;
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -97,7 +104,9 @@ export default function TaskCard({
 
   return (
     <Card
-      ref={dragRef}
+      ref={finalRef}
+      {...finalAttributes}
+      {...finalListeners}
       {...(!disableCardClick ? { onClick: handleCardClick } : {})}
       sx={{
         position: "relative",

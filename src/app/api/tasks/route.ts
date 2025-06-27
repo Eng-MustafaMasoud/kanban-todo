@@ -50,6 +50,18 @@ const writeDB = (data: Database): boolean => {
   }
 };
 
+// Handle OPTIONS requests for CORS
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    },
+  });
+}
+
 export async function GET(request: Request) {
   try {
     const db = readDB();
@@ -88,11 +100,14 @@ export async function GET(request: Request) {
     if (url.searchParams.has("_page") || url.searchParams.has("_limit")) {
       const response = NextResponse.json(paginatedTasks);
       response.headers.set("x-total-count", total.toString());
+      response.headers.set("Access-Control-Allow-Origin", "*");
       return response;
     }
 
     // Otherwise return all filtered tasks
-    return NextResponse.json(filteredTasks);
+    const response = NextResponse.json(filteredTasks);
+    response.headers.set("Access-Control-Allow-Origin", "*");
+    return response;
   } catch (error) {
     console.error("Error fetching tasks:", error);
     return NextResponse.json(
@@ -119,7 +134,9 @@ export async function POST(request: Request) {
     db.tasks.push(newTask);
 
     if (writeDB(db)) {
-      return NextResponse.json(newTask, { status: 201 });
+      const response = NextResponse.json(newTask, { status: 201 });
+      response.headers.set("Access-Control-Allow-Origin", "*");
+      return response;
     } else {
       throw new Error("Failed to write to database");
     }
