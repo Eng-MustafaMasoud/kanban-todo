@@ -63,7 +63,7 @@ export default function Column({
   const allTasks = useSelector((state: RootState) => state.tasks.tasks);
   const isLoading = useSelector((state: RootState) => state.tasks.loading);
 
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: id,
   });
 
@@ -170,19 +170,33 @@ export default function Column({
             : "linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%)",
         borderRadius: { xs: 2, sm: 3, md: 4 },
         border: (theme) =>
-          theme.palette.mode === "dark"
+          isOver
+            ? `2px solid ${theme.palette.primary.main}`
+            : theme.palette.mode === "dark"
             ? "1px solid rgba(255,255,255,0.1)"
             : "1px solid rgba(0,0,0,0.08)",
         boxShadow: (theme) =>
-          theme.palette.mode === "dark"
+          isOver
+            ? theme.palette.mode === "dark"
+              ? "0 12px 40px rgba(25, 118, 210, 0.3)"
+              : "0 12px 40px rgba(25, 118, 210, 0.2)"
+            : theme.palette.mode === "dark"
             ? "0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)"
             : "0 8px 32px rgba(0,0,0,0.1), 0 2px 8px rgba(0,0,0,0.05)",
         backdropFilter: "blur(20px)",
         transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+        transform: isOver ? "scale(1.02)" : "none",
         "&:hover": {
-          transform: { xs: "none", sm: "translateY(-2px)" },
+          transform: {
+            xs: "none",
+            sm: isOver ? "scale(1.02)" : "translateY(-2px)",
+          },
           boxShadow: (theme) =>
-            theme.palette.mode === "dark"
+            isOver
+              ? theme.palette.mode === "dark"
+                ? "0 12px 40px rgba(25, 118, 210, 0.4)"
+                : "0 12px 40px rgba(25, 118, 210, 0.25)"
+              : theme.palette.mode === "dark"
               ? "0 12px 40px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3)"
               : "0 12px 40px rgba(0,0,0,0.15), 0 4px 12px rgba(0,0,0,0.08)",
         },

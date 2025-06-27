@@ -4,7 +4,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Box, Typography, useTheme, useMediaQuery, Paper } from "@mui/material";
 import {
   DndContext,
-  closestCenter,
   DragEndEvent,
   PointerSensor,
   KeyboardSensor,
@@ -12,6 +11,7 @@ import {
   useSensors,
   DragStartEvent,
   DragOverlay,
+  rectIntersection,
 } from "@dnd-kit/core";
 import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import Column from "./Column";
@@ -40,11 +40,12 @@ const Board: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const isTablet = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Configure sensors for better performance
+  // Configure sensors for better performance and reliability
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 8px movement required before drag starts
+        distance: 5, // Reduced from 8px for easier activation
+        tolerance: 5, // Allow some tolerance for touch devices
       },
     }),
     useSensor(KeyboardSensor)
@@ -112,33 +113,43 @@ const Board: React.FC = () => {
     }
   };
 
-  const handleMoveTask = async (taskId: string, newColumn: ColumnType) => {
-    console.log("handleMoveTask called:", { taskId, newColumn });
-    const task = tasks.find((t) => String(t.id) === String(taskId));
-    console.log("Found task:", task);
+  const handleMoveTask = useCallback(
+    async (taskId: string, newColumn: ColumnType) => {
+      console.log("handleMoveTask called:", { taskId, newColumn });
+      const task = tasks.find((t) => String(t.id) === String(taskId));
+      console.log("Found task:", task);
 
-    if (task && task.column !== newColumn) {
+      if (!task) {
+        console.error("Task not found:", taskId);
+        return;
+      }
+
+      if (task.column === newColumn) {
+        console.log("Task already in target column:", newColumn);
+        return;
+      }
+
       try {
         console.log("Moving task from", task.column, "to", newColumn);
         const result = await dispatch(
-          editTask({ ...task, column: newColumn })
+          editTask({ ...task, column: newColumn, status: newColumn })
         ).unwrap();
         console.log("Task moved successfully:", result);
       } catch (error) {
         console.error("Failed to move task:", error);
       }
-    } else {
-      console.log("Task not found or already in target column");
-    }
-  };
+    },
+    [tasks, dispatch]
+  );
 
-  // Memoized drag handlers
+  // Memoized drag handlers with better error handling
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const { active } = event;
       const taskId = active.id as string;
       const found = tasks.find((t) => String(t.id) === String(taskId));
       setActiveTask(found || null);
+      console.log("Drag started for task:", found?.title || taskId);
     },
     [tasks]
   );
@@ -147,11 +158,21 @@ const Board: React.FC = () => {
     async (event: DragEndEvent) => {
       setActiveTask(null);
       const { active, over } = event;
-      if (!over || !active) return;
+
+      if (!over || !active) {
+        console.log("Drag ended without valid drop target");
+        return;
+      }
+
       const taskId = active.id as string;
       const newColumn = over.id as ColumnType;
+
+      console.log("Drag ended:", { taskId, newColumn, validColumns: COLUMNS });
+
       if (COLUMNS.includes(newColumn)) {
         await handleMoveTask(taskId, newColumn);
+      } else {
+        console.log("Invalid drop target:", newColumn);
       }
     },
     [handleMoveTask]
@@ -239,7 +260,7 @@ const Board: React.FC = () => {
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={rectIntersection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       modifiers={[restrictToWindowEdges]}
@@ -354,15 +375,27 @@ const Board: React.FC = () => {
           task={editingTask}
           isSubmitting={isSubmitting}
         />
-        {/* Drag Overlay for better performance */}
+
+        {/* Drag Overlay for better visual feedback */}
         <DragOverlay>
           {activeTask ? (
-            <TaskCard
-              task={activeTask}
-              onEdit={() => {}}
-              onDelete={() => {}}
-              disableCardClick={true}
-            />
+            <Box
+              sx={{
+                transform: "rotate(5deg) scale(1.05)",
+                opacity: 0.9,
+                boxShadow: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "0 20px 40px rgba(0,0,0,0.5)"
+                    : "0 20px 40px rgba(0,0,0,0.2)",
+              }}
+            >
+              <TaskCard
+                task={activeTask}
+                onEdit={() => {}}
+                onDelete={() => {}}
+                disableCardClick={true}
+              />
+            </Box>
           ) : null}
         </DragOverlay>
       </Box>
