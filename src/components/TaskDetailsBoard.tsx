@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -79,52 +79,63 @@ function TaskDetailsBoardContent({ parentTaskId }: { parentTaskId: string }) {
   // Fetch tasks if not already loaded
   useEffect(() => {
     if (tasks.length === 0 && !isLoading) {
-      console.log("No tasks in store, fetching tasks...");
       dispatch(fetchTasks());
     }
   }, [dispatch, tasks.length, isLoading]);
 
   // Get the parent task
   const parentTask = useMemo(() => {
-    console.log("Looking for parent task with ID:", parentTaskId);
-    console.log("Available tasks:", tasks);
     return tasks.find((t: Task) => String(t.id) === String(parentTaskId));
   }, [tasks, parentTaskId]);
 
-  // Get subtasks for each column with search filter and pagination
-  const getSubTasksByColumn = (column: SubTaskColumnType) => {
-    if (!parentTask?.subtasks) return [];
-    const filteredSubTasks = parentTask.subtasks.filter((subtask: SubTask) => {
-      const matchesSearch =
-        searchQuery.trim() === "" ||
-        subtask.title.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesColumn = subtask.status === column;
-      return matchesSearch && matchesColumn;
-    });
-    return filteredSubTasks;
-  };
+  // Memoize filtered subtasks by column
+  const getSubTasksByColumn = useCallback(
+    (column: SubTaskColumnType) => {
+      if (!parentTask?.subtasks) return [];
+      const filteredSubTasks = parentTask.subtasks.filter(
+        (subtask: SubTask) => {
+          const matchesSearch =
+            searchQuery.trim() === "" ||
+            subtask.title.toLowerCase().includes(searchQuery.toLowerCase());
+          const matchesColumn = subtask.status === column;
+          return matchesSearch && matchesColumn;
+        }
+      );
+      return filteredSubTasks;
+    },
+    [parentTask?.subtasks, searchQuery]
+  );
 
   // Get paginated subtasks for a specific column
-  const getPaginatedSubTasks = (column: SubTaskColumnType) => {
-    const allSubTasks = getSubTasksByColumn(column);
-    const startIndex = (pagination[column] - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return allSubTasks.slice(startIndex, endIndex);
-  };
+  const getPaginatedSubTasks = useCallback(
+    (column: SubTaskColumnType) => {
+      const allSubTasks = getSubTasksByColumn(column);
+      const startIndex = (pagination[column] - 1) * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+      return allSubTasks.slice(startIndex, endIndex);
+    },
+    [getSubTasksByColumn, pagination]
+  );
 
   // Get total pages for a column
-  const getTotalPages = (column: SubTaskColumnType) => {
-    const totalItems = getSubTasksByColumn(column).length;
-    return Math.ceil(totalItems / ITEMS_PER_PAGE);
-  };
+  const getTotalPages = useCallback(
+    (column: SubTaskColumnType) => {
+      const totalItems = getSubTasksByColumn(column).length;
+      return Math.ceil(totalItems / ITEMS_PER_PAGE);
+    },
+    [getSubTasksByColumn]
+  );
 
   // Handle page change for a specific column
-  const handlePageChange = (column: SubTaskColumnType, newPage: number) => {
-    setPagination((prev) => ({
-      ...prev,
-      [column]: newPage,
-    }));
-  };
+  const handlePageChange = useCallback(
+    (column: SubTaskColumnType, newPage: number) => {
+      setPagination((prev) => ({
+        ...prev,
+        [column]: newPage,
+      }));
+    },
+    []
+  );
 
   // Reset pagination when search changes
   useEffect(() => {
@@ -136,78 +147,78 @@ function TaskDetailsBoardContent({ parentTaskId }: { parentTaskId: string }) {
   }, [searchQuery]);
 
   // Handlers
-  //   handle add subTask
-  const handleAddSubTask = () => {
+  const handleAddSubTask = useCallback(() => {
     setIsAddingSubTask(true);
     setEditingSubTask(undefined);
-  };
-  //   handle editbTask
+  }, []);
 
-  const handleEditSubTask = (subTask: SubTask) => {
+  const handleEditSubTask = useCallback((subTask: SubTask) => {
     setIsAddingSubTask(false);
     setEditingSubTask(subTask);
-  };
+  }, []);
 
-  const handleSubTaskSubmit = async (
-    values: Omit<SubTask, "id">,
-    subTaskId?: number
-  ) => {
-    if (!parentTask) return;
+  const handleSubTaskSubmit = useCallback(
+    async (values: Omit<SubTask, "id">, subTaskId?: number) => {
+      if (!parentTask) return;
 
-    setIsSubmitting(true);
-    try {
-      const updatedSubTasks = parentTask.subtasks
-        ? [...parentTask.subtasks]
-        : [];
+      setIsSubmitting(true);
+      try {
+        const updatedSubTasks = parentTask.subtasks
+          ? [...parentTask.subtasks]
+          : [];
 
-      if (subTaskId) {
-        // Edit existing subtask
-        const index = updatedSubTasks.findIndex((st) => st.id === subTaskId);
-        if (index !== -1) {
-          updatedSubTasks[index] = { ...values, id: subTaskId };
+        if (subTaskId) {
+          // Edit existing subtask
+          const index = updatedSubTasks.findIndex((st) => st.id === subTaskId);
+          if (index !== -1) {
+            updatedSubTasks[index] = { ...values, id: subTaskId };
+          }
+        } else {
+          // Add new subtask
+          updatedSubTasks.push({ ...values, id: Date.now() });
         }
-      } else {
-        // Add new subtask
-        updatedSubTasks.push({ ...values, id: Date.now() });
+
+        const updatedTask = {
+          ...parentTask,
+          subtasks: updatedSubTasks,
+        };
+
+        await dispatch(editTask(updatedTask)).unwrap();
+        setEditingSubTask(undefined);
+        setIsAddingSubTask(false);
+      } catch (error) {
+        console.error("Error submitting subtask:", error);
+      } finally {
+        setIsSubmitting(false);
       }
+    },
+    [parentTask, dispatch]
+  );
 
-      const updatedTask = {
-        ...parentTask,
-        subtasks: updatedSubTasks,
-      };
+  const handleDeleteSubTask = useCallback(
+    async (subTaskId: number) => {
+      if (!parentTask) return;
 
-      await dispatch(editTask(updatedTask)).unwrap();
-      setEditingSubTask(undefined);
-      setIsAddingSubTask(false);
-    } catch (error) {
-      console.error("Error submitting subtask:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-  //   handle deletebTask
+      setIsSubmitting(true);
+      try {
+        const updatedSubTasks =
+          parentTask.subtasks?.filter((st) => st.id !== subTaskId) || [];
+        const updatedTask = {
+          ...parentTask,
+          subtasks: updatedSubTasks,
+        };
 
-  const handleDeleteSubTask = async (subTaskId: number) => {
-    if (!parentTask) return;
-
-    setIsSubmitting(true);
-    try {
-      const updatedSubTasks =
-        parentTask.subtasks?.filter((st) => st.id !== subTaskId) || [];
-      const updatedTask = {
-        ...parentTask,
-        subtasks: updatedSubTasks,
-      };
-
-      await dispatch(editTask(updatedTask)).unwrap();
-      setEditingSubTask(undefined);
-      setIsAddingSubTask(false);
-    } catch (error) {
-      console.error("Error deleting subtask:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+        await dispatch(editTask(updatedTask)).unwrap();
+        setEditingSubTask(undefined);
+        setIsAddingSubTask(false);
+      } catch (error) {
+        console.error("Error deleting subtask:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [parentTask, dispatch]
+  );
 
   // Move subtask to a new column when dropped
   const moveSubTask = async (

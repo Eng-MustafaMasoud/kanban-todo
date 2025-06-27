@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useCallback, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -48,26 +49,28 @@ export default function TaskCard({
   const finalAttributes = dragHandleProps || attributes;
   const finalRef = setNodeRef;
 
-  const handleEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onEdit(task);
-  };
+  const handleEdit = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onEdit(task);
+    },
+    [onEdit, task]
+  );
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    console.log("Delete clicked for task:", {
-      id: task.id,
-      type: typeof task.id,
-    });
-    onDelete(String(task.id));
-  };
+  const handleDelete = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      onDelete(String(task.id));
+    },
+    [onDelete, task.id]
+  );
 
   const router = useRouter();
-  const handleCardClick = () => {
+  const handleCardClick = useCallback(() => {
     router.push(`/tasks/${task.id}`);
-  };
+  }, [router, task.id]);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case "backlog":
         return "#ff6b6b";
@@ -80,9 +83,9 @@ export default function TaskCard({
       default:
         return "#667eea";
     }
-  };
+  }, []);
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = useCallback((status: string) => {
     switch (status) {
       case "backlog":
         return "Backlog";
@@ -95,12 +98,15 @@ export default function TaskCard({
       default:
         return status;
     }
-  };
+  }, []);
 
-  // Use column instead of status for display
-  const displayStatus = task.column || task.status;
-  const statusColor = getStatusColor(displayStatus);
-  const statusLabel = getStatusLabel(displayStatus);
+  // Memoize status calculations
+  const { statusColor, statusLabel } = useMemo(() => {
+    const displayStatus = task.column || task.status;
+    const statusColor = getStatusColor(displayStatus);
+    const statusLabel = getStatusLabel(displayStatus);
+    return { statusColor, statusLabel };
+  }, [task.column, task.status, getStatusColor, getStatusLabel]);
 
   return (
     <Card
@@ -200,15 +206,13 @@ export default function TaskCard({
                   theme.palette.mode === "dark"
                     ? "rgba(255,255,255,0.1)"
                     : "rgba(0,0,0,0.05)",
-                color: "primary.main",
+                color: (theme) => theme.palette.primary.main,
                 "&:hover": {
                   background: (theme) =>
                     theme.palette.mode === "dark"
                       ? "rgba(255,255,255,0.15)"
                       : "rgba(0,0,0,0.08)",
-                  transform: "scale(1.1)",
                 },
-                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
               <Edit fontSize="small" />
@@ -221,15 +225,13 @@ export default function TaskCard({
                   theme.palette.mode === "dark"
                     ? "rgba(255,255,255,0.1)"
                     : "rgba(0,0,0,0.05)",
-                color: "error.main",
+                color: (theme) => theme.palette.error.main,
                 "&:hover": {
                   background: (theme) =>
                     theme.palette.mode === "dark"
                       ? "rgba(255,255,255,0.15)"
                       : "rgba(0,0,0,0.08)",
-                  transform: "scale(1.1)",
                 },
-                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
               }}
             >
               <Delete fontSize="small" />
@@ -243,10 +245,15 @@ export default function TaskCard({
           component="h3"
           sx={{
             fontWeight: 600,
-            lineHeight: 1.3,
-            color: "text.primary",
-            wordBreak: "break-word",
             mb: 1,
+            color: "text.primary",
+            fontSize: { xs: "1rem", sm: "1.1rem" },
+            lineHeight: 1.3,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
           }}
         >
           {task.title}
@@ -258,38 +265,31 @@ export default function TaskCard({
             variant="body2"
             color="text.secondary"
             sx={{
-              lineHeight: 1.4,
-              wordBreak: "break-word",
-              mb: 1,
+              mb: 2,
+              lineHeight: 1.5,
+              display: "-webkit-box",
+              WebkitLineClamp: 3,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              fontSize: { xs: "0.875rem", sm: "0.9rem" },
             }}
           >
             {task.description}
           </Typography>
         )}
 
-        {/* Subtasks Count */}
-        {task.subtasks && task.subtasks.length > 0 && (
-          <Box sx={{ mt: 1 }}>
-            <Typography variant="caption" color="text.secondary">
-              {task.subtasks.length}{" "}
-              {task.subtasks.length === 1 ? "subtask" : "subtasks"}
-            </Typography>
-          </Box>
-        )}
-
-        {/* Drag Indicator */}
-        <Box
+        {/* Task ID */}
+        <Typography
+          variant="caption"
+          color="text.disabled"
           sx={{
-            position: "absolute",
-            bottom: 8,
-            right: 8,
-            opacity: 0.3,
             fontSize: "0.75rem",
-            color: "text.secondary",
+            fontFamily: "monospace",
           }}
         >
-          ⋮⋮
-        </Box>
+          ID: {task.id}
+        </Typography>
       </CardContent>
     </Card>
   );

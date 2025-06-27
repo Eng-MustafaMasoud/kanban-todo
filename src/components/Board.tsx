@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import { Box, Typography, useTheme, useMediaQuery, Paper } from "@mui/material";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Box, Typography, useTheme, useMediaQuery } from "@mui/material";
 import {
   DndContext,
   DragEndEvent,
@@ -11,9 +11,8 @@ import {
   useSensors,
   DragStartEvent,
   DragOverlay,
-  rectIntersection,
+  closestCenter,
 } from "@dnd-kit/core";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 import Column from "./Column";
 import TaskModal from "./TaskModal";
 import { useSelector, useDispatch } from "react-redux";
@@ -44,8 +43,7 @@ const Board: React.FC = () => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5, // Reduced from 8px for easier activation
-        tolerance: 5, // Allow some tolerance for touch devices
+        distance: 3, // Very small distance for easier activation
       },
     }),
     useSensor(KeyboardSensor)
@@ -58,9 +56,6 @@ const Board: React.FC = () => {
   const tasksLoading = useSelector((state: RootState) => state.tasks.loading);
   const dispatch: AppDispatch = useDispatch();
   const [searchTerm] = useState("");
-  const [selectedTaskId, setSelectedTaskId] = useState<string | undefined>(
-    undefined
-  );
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -80,44 +75,43 @@ const Board: React.FC = () => {
     }
   }, [dispatch, mounted]);
 
-  // Filter tasks based on search term
-  const filteredTasks = tasks.filter(
-    (task: Task) =>
-      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Memoize filtered tasks to prevent recalculation on every render
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(
+      (task: Task) =>
+        task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [tasks, searchTerm]);
 
   // Handlers for Column
-  const handleAddTask = () => {
+  const handleAddTask = useCallback(() => {
     setEditingTask(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = useCallback((task: Task) => {
     setEditingTask(task);
-    setSelectedTaskId(String(task.id));
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleDeleteTask = async (taskId: string) => {
-    try {
-      console.log("handleDeleteTask called:", { taskId, type: typeof taskId });
-      setIsSubmitting(true);
-      const result = await dispatch(deleteTask(taskId)).unwrap();
-      console.log("Task deleted successfully:", result);
-      setSelectedTaskId(undefined);
-    } catch (error) {
-      console.error("Failed to delete task:", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const handleDeleteTask = useCallback(
+    async (taskId: string) => {
+      try {
+        setIsSubmitting(true);
+        await dispatch(deleteTask(taskId)).unwrap();
+      } catch (error) {
+        console.error("Failed to delete task:", error);
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [dispatch]
+  );
 
   const handleMoveTask = useCallback(
     async (taskId: string, newColumn: ColumnType) => {
-      console.log("handleMoveTask called:", { taskId, newColumn });
       const task = tasks.find((t) => String(t.id) === String(taskId));
-      console.log("Found task:", task);
 
       if (!task) {
         console.error("Task not found:", taskId);
@@ -125,16 +119,13 @@ const Board: React.FC = () => {
       }
 
       if (task.column === newColumn) {
-        console.log("Task already in target column:", newColumn);
-        return;
+        return; // Task already in target column
       }
 
       try {
-        console.log("Moving task from", task.column, "to", newColumn);
-        const result = await dispatch(
+        await dispatch(
           editTask({ ...task, column: newColumn, status: newColumn })
         ).unwrap();
-        console.log("Task moved successfully:", result);
       } catch (error) {
         console.error("Failed to move task:", error);
       }
@@ -142,14 +133,13 @@ const Board: React.FC = () => {
     [tasks, dispatch]
   );
 
-  // Memoized drag handlers with better error handling
+  // Simplified drag handlers
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
       const { active } = event;
       const taskId = active.id as string;
       const found = tasks.find((t) => String(t.id) === String(taskId));
       setActiveTask(found || null);
-      console.log("Drag started for task:", found?.title || taskId);
     },
     [tasks]
   );
@@ -160,154 +150,102 @@ const Board: React.FC = () => {
       const { active, over } = event;
 
       if (!over || !active) {
-        console.log("Drag ended without valid drop target");
         return;
       }
 
       const taskId = active.id as string;
       const newColumn = over.id as ColumnType;
 
-      console.log("Drag ended:", { taskId, newColumn, validColumns: COLUMNS });
-
       if (COLUMNS.includes(newColumn)) {
         await handleMoveTask(taskId, newColumn);
-      } else {
-        console.log("Invalid drop target:", newColumn);
       }
     },
     [handleMoveTask]
   );
 
-  const handleSubmitTask = async (
-    values: Omit<Task, "id">,
-    taskId?: string
-  ) => {
-    try {
-      setIsSubmitting(true);
-      console.log("=== BOARD SUBMIT DEBUG ===");
-      console.log("Received values:", values);
-      console.log("Received taskId:", taskId);
-      console.log("TaskId type:", typeof taskId);
-      console.log("Editing task:", editingTask);
-      console.log("Is edit mode:", !!taskId);
+  const handleSubmitTask = useCallback(
+    async (values: Omit<Task, "id">, taskId?: string) => {
+      try {
+        setIsSubmitting(true);
 
-      if (taskId) {
-        // Edit existing task
-        console.log("EDITING EXISTING TASK with ID:", taskId);
-        const taskToEdit = { ...values, id: taskId };
-        console.log("Task to edit:", taskToEdit);
-        const result = await dispatch(editTask(taskToEdit)).unwrap();
-        console.log("Task edited successfully:", result);
-      } else {
-        // Add new task
-        console.log("CREATING NEW TASK");
-        const result = await dispatch(addTask(values)).unwrap();
-        console.log("Task created successfully:", result);
+        if (taskId) {
+          // Editing existing task
+          const taskToEdit = tasks.find((t) => String(t.id) === String(taskId));
+          if (taskToEdit) {
+            await dispatch(
+              editTask({
+                ...taskToEdit,
+                ...values,
+              })
+            ).unwrap();
+          }
+        } else {
+          // Creating new task
+          await dispatch(addTask(values)).unwrap();
+        }
+
+        setIsModalOpen(false);
+        setEditingTask(null);
+      } catch (error) {
+        console.error("Failed to save task:", error);
+        throw error;
+      } finally {
+        setIsSubmitting(false);
       }
-      console.log("=== END BOARD DEBUG ===");
+    },
+    [tasks, dispatch]
+  );
 
-      setIsModalOpen(false);
-      setEditingTask(null);
-      setSelectedTaskId(undefined);
-    } catch (error) {
-      console.error("Failed to save task:", error);
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setEditingTask(null);
-    setSelectedTaskId(undefined);
-  };
+  }, []);
 
-  // Show loading state
-  if (columnsLoading || tasksLoading) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "60vh",
-        }}
-      >
-        <Typography component="div">
-          <NotePenLoader />
-        </Typography>
-      </Box>
-    );
+  // Don't render anything on the server to avoid hydration mismatch
+  if (!mounted) {
+    return null;
   }
 
-  // Don't render DndProvider until mounted to prevent hydration issues
-  if (!mounted) {
-    return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          minHeight: "60vh",
-        }}
-      >
-        <Typography>Loading...</Typography>
-      </Box>
-    );
+  if (columnsLoading || tasksLoading) {
+    return <NotePenLoader />;
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={rectIntersection}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      modifiers={[restrictToWindowEdges]}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        bgcolor: "background.default",
+        p: { xs: 1, sm: 2, md: 3 },
+      }}
     >
       <Box
         sx={{
-          minHeight: "100vh",
-          p: { xs: 1, sm: 2, md: 3 },
-          background: "transparent",
+          maxWidth: "100%",
+          mx: "auto",
+          mb: 3,
         }}
       >
-        {/* Header */}
-        <Box
+        <Typography
+          variant="h4"
+          component="h1"
           sx={{
-            mb: { xs: 2, sm: 3, md: 4 },
-            textAlign: { xs: "center", sm: "left" },
+            fontWeight: "bold",
+            textAlign: "center",
+            mb: 2,
+            color: "text.primary",
           }}
         >
-          <Typography
-            variant={isMobile ? "h5" : isTablet ? "h4" : "h3"}
-            component="h1"
-            sx={{
-              fontWeight: 700,
-              background: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
-                  : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-              backgroundClip: "text",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              mb: { xs: 1, sm: 2 },
-            }}
-          >
-            Kanban Board
-          </Typography>
-          <Typography
-            variant={isMobile ? "body2" : "body1"}
-            color="text.secondary"
-            sx={{ opacity: 0.8 }}
-          >
-            Organize your tasks with drag and drop
-          </Typography>
-        </Box>
+          Kanban Board
+        </Typography>
+      </Box>
 
-        {/* Board Layout */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
         <Box
-          className="kanaban-columns"
           sx={{
             display: "grid",
             gridTemplateColumns: {
@@ -320,86 +258,34 @@ const Board: React.FC = () => {
             overflowX: "auto",
           }}
         >
-          {COLUMNS.map((columnId) => (
+          {COLUMNS.map((columnType) => (
             <Column
-              key={columnId}
-              id={columnId}
+              key={columnType}
+              type={columnType}
+              tasks={filteredTasks.filter((task) => task.column === columnType)}
               onAddTask={handleAddTask}
               onEditTask={handleEditTask}
               onDeleteTask={handleDeleteTask}
-              selectedTaskId={selectedTaskId}
-              search={searchTerm}
+              isMobile={isMobile}
+              isTablet={isTablet}
             />
           ))}
         </Box>
 
-        {/* Empty State */}
-        {filteredTasks.length === 0 && searchTerm && (
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 3, sm: 4 },
-              textAlign: "center",
-              background: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "rgba(255,255,255,0.05)"
-                  : "rgba(255,255,255,0.7)",
-              backdropFilter: "blur(10px)",
-              borderRadius: 3,
-              border: (theme) =>
-                theme.palette.mode === "dark"
-                  ? "1px solid rgba(255,255,255,0.1)"
-                  : "1px solid rgba(0,0,0,0.1)",
-            }}
-          >
-            <Typography
-              variant={isMobile ? "h6" : "h5"}
-              sx={{ mb: 1, fontWeight: 600 }}
-            >
-              No tasks found
-            </Typography>
-            <Typography
-              variant={isMobile ? "body2" : "body1"}
-              color="text.secondary"
-            >
-              Try adjusting your search terms or create a new task
-            </Typography>
-          </Paper>
-        )}
-
-        {/* Task Modal */}
-        <TaskModal
-          open={isModalOpen}
-          onClose={handleCloseModal}
-          onSubmit={handleSubmitTask}
-          task={editingTask}
-          isSubmitting={isSubmitting}
-        />
-
-        {/* Drag Overlay for better visual feedback */}
         <DragOverlay>
-          {activeTask ? (
-            <Box
-              sx={{
-                transform: "rotate(5deg) scale(1.05)",
-                opacity: 0.9,
-                boxShadow: (theme) =>
-                  theme.palette.mode === "dark"
-                    ? "0 20px 40px rgba(0,0,0,0.5)"
-                    : "0 20px 40px rgba(0,0,0,0.2)",
-              }}
-            >
-              <TaskCard
-                task={activeTask}
-                onEdit={() => {}}
-                onDelete={() => {}}
-                disableCardClick={true}
-              />
-            </Box>
-          ) : null}
+          {activeTask ? <TaskCard task={activeTask} /> : null}
         </DragOverlay>
-      </Box>
-    </DndContext>
+      </DndContext>
+
+      <TaskModal
+        open={isModalOpen}
+        onClose={handleCloseModal}
+        onSubmit={handleSubmitTask}
+        onDelete={handleDeleteTask}
+        task={editingTask}
+        isSubmitting={isSubmitting}
+      />
+    </Box>
   );
 };
 

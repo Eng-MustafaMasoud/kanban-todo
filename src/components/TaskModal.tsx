@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import {
@@ -78,20 +78,10 @@ export default function TaskModal({
         "backlog",
     },
     validationSchema: task?.id ? editValidationSchema : validationSchema,
-    enableReinitialize: true,
+    enableReinitialize: false, // Disable to prevent re-renders on every keystroke
     onSubmit: async (values) => {
       try {
         setError("");
-        console.log("=== FORM SUBMISSION DEBUG ===");
-        console.log("Task object:", task);
-        console.log("Task ID:", task?.id);
-        console.log("Task ID type:", typeof task?.id);
-        console.log("Is edit mode:", !!task?.id);
-        console.log("Form values:", values);
-        console.log(
-          "Validation schema:",
-          task?.id ? "editValidationSchema" : "validationSchema"
-        );
 
         // For edit mode, preserve the existing column if not provided
         // For add mode, use the selected column
@@ -115,10 +105,6 @@ export default function TaskModal({
           };
         }
 
-        console.log("Final submit values:", submitValues);
-        console.log("Task ID to pass:", task?.id ? String(task.id) : undefined);
-        console.log("=== END DEBUG ===");
-
         await onSubmit(submitValues, task?.id ? String(task.id) : undefined);
       } catch (err) {
         console.error("Form submission error:", err);
@@ -132,22 +118,23 @@ export default function TaskModal({
     setMounted(true);
   }, []);
 
-  // Debug form validation state
+  // Update form values when task changes (only when modal opens)
   useEffect(() => {
-    console.log("Form validation state:", {
-      isValid: formik.isValid,
-      values: formik.values,
-      errors: formik.errors,
-      touched: formik.touched,
-    });
-  }, [formik.isValid, formik.values, formik.errors, formik.touched]);
+    if (open && task) {
+      formik.setValues({
+        title: task.title || "",
+        description: task.description || "",
+        column:
+          (task.column as "backlog" | "in_progress" | "review" | "done") ||
+          "backlog",
+      });
+    } else if (open && !task) {
+      // Reset form for new task
+      formik.resetForm();
+    }
+  }, [open, task?.id]); // Only depend on open state and task ID
 
-  // Don't render anything on the server to avoid hydration mismatch
-  if (!mounted) {
-    return null;
-  }
-
-  const handleDelete = async () => {
+  const handleDelete = useCallback(async () => {
     if (!task?.id || !onDelete) return;
 
     try {
@@ -160,7 +147,12 @@ export default function TaskModal({
         err instanceof Error ? err.message : "Failed to delete task";
       setError(errorMessage);
     }
-  };
+  }, [task?.id, onDelete, onClose]);
+
+  // Don't render anything on the server to avoid hydration mismatch
+  if (!mounted) {
+    return null;
+  }
 
   const isEditMode = !!task?.id;
 

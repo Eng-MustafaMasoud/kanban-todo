@@ -3,7 +3,6 @@
 import { Box, useTheme, Typography, CircularProgress } from "@mui/material";
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { fetchTask } from "@/lib/api";
 import TaskDetailsBoard from "@/components/TaskDetailsBoard";
 import NotePenLoader from "@/components/NotePenLoader";
 
@@ -14,23 +13,13 @@ export default function TaskDetailsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadTask = async () => {
-      if (!id) return;
+    // Simulate loading time for better UX
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
 
-      try {
-        setLoading(true);
-        console.log("Loading task with ID:", id);
-        await fetchTask(id);
-        console.log("Task data loaded successfully");
-      } catch (err) {
-        console.error("Error loading task:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadTask();
-  }, [id]);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (loading) {
     return (
