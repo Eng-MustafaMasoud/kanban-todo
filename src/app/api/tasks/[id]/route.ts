@@ -1,54 +1,5 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
-
-// Define types for the database
-interface Task {
-  id: string | number;
-  title: string;
-  description: string;
-  column: "backlog" | "in_progress" | "review" | "done";
-  status: "backlog" | "in_progress" | "review" | "done";
-  subtasks?: Array<{
-    id: number;
-    title: string;
-    status: "todo" | "doing" | "done";
-  }>;
-}
-
-interface Database {
-  tasks: Task[];
-  columns?: Array<{
-    id: string;
-    title: string;
-  }>;
-}
-
-// Path to the JSON database file
-const DB_PATH = path.join(process.cwd(), "db.json");
-
-// Helper function to read the database
-const readDB = (): Database => {
-  try {
-    const data = fs.readFileSync(DB_PATH, "utf8");
-    return JSON.parse(data);
-  } catch (error) {
-    console.error("Error reading database:", error);
-    // Return default structure if database file doesn't exist
-    return { tasks: [] };
-  }
-};
-
-// Helper function to write to the database
-const writeDB = (data: Database): boolean => {
-  try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-    return true;
-  } catch (error) {
-    console.error("Error writing to database:", error);
-    return false;
-  }
-};
+import { readDB, writeDB, Task } from "@/lib/database";
 
 // Handle OPTIONS requests for CORS
 export async function OPTIONS() {
