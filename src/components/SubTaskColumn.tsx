@@ -228,7 +228,6 @@ export default function SubTaskColumn({
                 subTask={subTask}
                 onEdit={onEditSubTask}
                 onDelete={onDeleteSubTask}
-                currentColumn={id}
               />
             ))}
           </Box>

@@ -10,21 +10,19 @@ import {
   Chip,
 } from "@mui/material";
 import { Edit as EditIcon, Delete as DeleteIcon } from "@mui/icons-material";
-import { SubTask, SubTaskColumnType } from "@/lib/api";
+import { SubTask } from "@/lib/api";
 import { useDraggable } from "@dnd-kit/core";
 
 interface SubTaskCardProps {
   subTask: SubTask;
   onEdit: (subTask: SubTask) => void;
   onDelete: (id: number) => void;
-  currentColumn: SubTaskColumnType;
 }
 
 export default function SubTaskCard({
   subTask,
   onEdit,
   onDelete,
-  currentColumn,
 }: SubTaskCardProps) {
   const [isHovered, setIsHovered] = useState(false);
 
@@ -62,11 +60,20 @@ export default function SubTaskCard({
     }
   };
 
+  const handleEditClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log("Edit button clicked for subtask:", subTask);
+    onEdit(subTask);
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    console.log("Delete button clicked for subtask:", subTask);
+    onDelete(subTask.id);
+  };
+
   return (
     <Card
-      ref={setNodeRef}
-      {...attributes}
-      {...listeners}
       sx={{
         background: (theme) =>
           theme.palette.mode === "dark"
@@ -83,7 +90,6 @@ export default function SubTaskCard({
             : "0 4px 16px rgba(0,0,0,0.08)",
         backdropFilter: "blur(10px)",
         transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-        cursor: "grab",
         opacity: isDragging ? 0.5 : 1,
         transform: isDragging ? "rotate(5deg) scale(0.95)" : "none",
         "&:hover": {
@@ -92,20 +98,13 @@ export default function SubTaskCard({
             theme.palette.mode === "dark"
               ? "0 8px 24px rgba(0,0,0,0.4)"
               : "0 8px 24px rgba(0,0,0,0.12)",
-          "& .card-actions": {
-            opacity: 1,
-          },
-        },
-        "&:active": {
-          cursor: "grabbing",
-          transform: "scale(0.98)",
         },
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <CardContent sx={{ p: 2.5, position: "relative" }}>
-        {/* Status Chip */}
+        {/* Status Chip and Action Buttons Row */}
         <Box
           sx={{
             mb: 2,
@@ -136,19 +135,18 @@ export default function SubTaskCard({
             }}
           />
 
-          {/* Action Buttons */}
+          {/* Action Buttons - Always visible */}
           <Box
-            className="card-actions"
             sx={{
               display: "flex",
               gap: 0.5,
-              opacity: 0,
+              opacity: isHovered ? 1 : 0.7,
               transition: "opacity 0.2s ease-in-out",
             }}
           >
             <IconButton
               size="small"
-              onClick={() => onEdit(subTask)}
+              onClick={handleEditClick}
               sx={{
                 background: (theme) =>
                   theme.palette.mode === "dark"
@@ -169,7 +167,7 @@ export default function SubTaskCard({
             </IconButton>
             <IconButton
               size="small"
-              onClick={() => onDelete(subTask.id)}
+              onClick={handleDeleteClick}
               sx={{
                 background: (theme) =>
                   theme.palette.mode === "dark"
@@ -191,31 +189,42 @@ export default function SubTaskCard({
           </Box>
         </Box>
 
-        {/* Task Title */}
-        <Typography
-          variant="body1"
-          sx={{
-            fontWeight: 500,
-            lineHeight: 1.4,
-            color: "text.primary",
-            wordBreak: "break-word",
-          }}
-        >
-          {subTask.title}
-        </Typography>
-
-        {/* Drag Indicator */}
+        {/* Draggable Content Area */}
         <Box
+          ref={setNodeRef}
+          {...attributes}
+          {...listeners}
           sx={{
-            position: "absolute",
-            bottom: 8,
-            right: 8,
-            opacity: 0.3,
-            fontSize: "0.75rem",
-            color: "text.secondary",
+            cursor: "grab",
+            "&:active": {
+              cursor: "grabbing",
+            },
           }}
         >
-          ⋮⋮
+          {/* Task Title */}
+          <Typography
+            variant="body1"
+            sx={{
+              fontWeight: 500,
+              lineHeight: 1.4,
+              color: "text.primary",
+              wordBreak: "break-word",
+            }}
+          >
+            {subTask.title}
+          </Typography>
+
+          {/* Drag Indicator */}
+          <Box
+            sx={{
+              mt: 1,
+              opacity: 0.3,
+              fontSize: "0.75rem",
+              color: "text.secondary",
+            }}
+          >
+            ⋮⋮
+          </Box>
         </Box>
       </CardContent>
     </Card>

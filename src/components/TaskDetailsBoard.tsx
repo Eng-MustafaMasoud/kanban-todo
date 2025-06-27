@@ -153,8 +153,10 @@ function TaskDetailsBoardContent({ parentTaskId }: { parentTaskId: string }) {
   }, []);
 
   const handleEditSubTask = useCallback((subTask: SubTask) => {
+    console.log("handleEditSubTask called with:", subTask);
     setIsAddingSubTask(false);
     setEditingSubTask(subTask);
+    console.log("Modal should open now. editingSubTask:", subTask);
   }, []);
 
   const handleSubTaskSubmit = useCallback(
@@ -604,6 +606,14 @@ function TaskDetailsBoardContent({ parentTaskId }: { parentTaskId: string }) {
         </Box>
 
         {/* SubTask Modal */}
+        {console.log(
+          "Modal state - editingSubTask:",
+          editingSubTask,
+          "isAddingSubTask:",
+          isAddingSubTask,
+          "open:",
+          !!editingSubTask || isAddingSubTask
+        )}
         <SubTaskModal
           open={!!editingSubTask || isAddingSubTask}
           onClose={() => {

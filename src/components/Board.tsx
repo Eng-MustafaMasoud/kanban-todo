@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Box, Typography, useTheme, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  Typography,
+  useTheme,
+  useMediaQuery,
+  TextField,
+  InputAdornment,
+} from "@mui/material";
+import { Search as SearchIcon } from "@mui/icons-material";
 import {
   DndContext,
   DragEndEvent,
@@ -37,7 +45,6 @@ const Board: React.FC = () => {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const isTablet = useMediaQuery(theme.breakpoints.down("md"));
 
   // Configure sensors for better performance and reliability
   const sensors = useSensors(
@@ -55,7 +62,7 @@ const Board: React.FC = () => {
   );
   const tasksLoading = useSelector((state: RootState) => state.tasks.loading);
   const dispatch: AppDispatch = useDispatch();
-  const [searchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -83,6 +90,14 @@ const Board: React.FC = () => {
         task.description?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [tasks, searchTerm]);
+
+  // Search handler
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchTerm(event.target.value);
+    },
+    []
+  );
 
   // Handlers for Column
   const handleAddTask = useCallback(() => {
@@ -225,18 +240,67 @@ const Board: React.FC = () => {
           mb: 3,
         }}
       >
-        <Typography
-          variant="h4"
-          component="h1"
+        {/* Header with title and search */}
+        <Box
           sx={{
-            fontWeight: "bold",
-            textAlign: "center",
-            mb: 2,
-            color: "text.primary",
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: { xs: "stretch", sm: "center" },
+            justifyContent: "space-between",
+            gap: { xs: 2, sm: 3 },
+            mb: 3,
           }}
         >
-          Kanban Board
-        </Typography>
+          <Typography
+            variant="h4"
+            component="h1"
+            sx={{
+              fontWeight: "bold",
+              color: "text.primary",
+              textAlign: { xs: "center", sm: "left" },
+            }}
+          >
+            Kanban Board
+          </Typography>
+
+          {/* Search Input */}
+          <TextField
+            placeholder="Search tasks..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            size="small"
+            sx={{
+              minWidth: { xs: "100%", sm: 300, md: 400 },
+              maxWidth: { xs: "100%", sm: 400 },
+              "& .MuiOutlinedInput-root": {
+                borderRadius: 2,
+                background: (theme) =>
+                  theme.palette.mode === "dark"
+                    ? "rgba(255,255,255,0.08)"
+                    : "rgba(0,0,0,0.04)",
+                "&:hover": {
+                  background: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "rgba(255,255,255,0.12)"
+                      : "rgba(0,0,0,0.08)",
+                },
+                "&.Mui-focused": {
+                  background: (theme) =>
+                    theme.palette.mode === "dark"
+                      ? "rgba(255,255,255,0.12)"
+                      : "rgba(0,0,0,0.08)",
+                },
+              },
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
       </Box>
 
       <DndContext
@@ -267,13 +331,19 @@ const Board: React.FC = () => {
               onEditTask={handleEditTask}
               onDeleteTask={handleDeleteTask}
               isMobile={isMobile}
-              isTablet={isTablet}
             />
           ))}
         </Box>
 
         <DragOverlay>
-          {activeTask ? <TaskCard task={activeTask} /> : null}
+          {activeTask ? (
+            <TaskCard
+              task={activeTask}
+              onEdit={handleEditTask}
+              onDelete={handleDeleteTask}
+              disableCardClick={true}
+            />
+          ) : null}
         </DragOverlay>
       </DndContext>
 
