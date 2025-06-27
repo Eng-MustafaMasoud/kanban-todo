@@ -70,6 +70,9 @@ A modern, responsive Kanban board application built with Next.js 15, React 19, a
    # or
    yarn dev
    ```
+npm run start:api for server running
+# or
+yarn start:api
 
 4. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
